@@ -9,7 +9,8 @@ related SDL technologies together. These are:
 - SDL_Mixer
 - SDL_TTF
 - SDL_Image
-- Emscripten
+- Web builds - Emscripten
+- Native builds
 
 ## Overview
 

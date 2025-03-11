@@ -188,13 +188,6 @@ SDL_AppResult SDL_AppEvent(void *appstate, SDL_Event *event){
 
     if (event->type == SDL_EVENT_KEY_DOWN) {
         switch(event->key.key) {
-            case SDLK_K:  ctx->y -= 10; break;
-            case SDLK_J:  
-                ctx->y += 10; 
-                //Mix_PlayChannel(-1, ctx->sound, 0);
-                break;
-            case SDLK_H:  ctx->x -= 10; break;
-            case SDLK_L:  ctx->x += 10; break;
             case SDLK_Q:  return SDL_APP_SUCCESS;
         }
     }
