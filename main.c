@@ -1,3 +1,4 @@
+#include "SDL3/SDL_error.h"
 #include "SDL3/SDL_timer.h"
 #define SDL_MAIN_USE_CALLBACKS
 
@@ -83,11 +84,13 @@ SDL_AppResult SDL_AppInit(void **appstate, int argc, char **argv)
     ctx->window = window;
     ctx->renderer = renderer;
 
-    //open audio device
-    //if (Mix_OpenAudio(0, NULL)) {
-    //  printf( "SDL Mixer could not be initialized! SDL Error: %s\n", SDL_GetError() );
-    //  return SDL_APP_FAILURE;
-    //}
+    //initialize sound
+    //bool Mix_OpenAudio(SDL_AudioDeviceID devid, const SDL_AudioSpec *spec);
+
+    if (!Mix_OpenAudio( 0, NULL)) {
+      printf( "SDL Mixer could not be initialized! SDL Error: %s\n", SDL_GetError() );
+      return SDL_APP_FAILURE;
+    }
 
     //load image
     ctx->image = loadTexture("assets/image.png", renderer);
@@ -96,18 +99,21 @@ SDL_AppResult SDL_AppInit(void **appstate, int argc, char **argv)
         return SDL_APP_FAILURE;
     }
 
-    ////load sound
-    //ctx->sound = loadSound("assets/sound.wav");
+    //load sound
+    ctx->sound = loadSound("assets/sound.wav");
+    if (!ctx->sound) {
+        printf( "Could not load sound. %s", SDL_GetError() );
+        return SDL_APP_FAILURE;
+    }
 
-    ////load music
-    //ctx->music = Mix_LoadMUS("assets/music.wav");
-    //if (!ctx->music) {
-    //    return SDL_APP_FAILURE;
-    //}
+    //load music
+    ctx->music = Mix_LoadMUS("assets/music.wav");
+    if (!ctx->music) {
+        printf( "Could not load music. %s", SDL_GetError() );
+        return SDL_APP_FAILURE;
+    }
 
-    ////play music
-    //Mix_VolumeMusic(30);
-    //Mix_PlayMusic(ctx->music, -1);
+    Mix_VolumeMusic(30);
 
     if (!TTF_Init()) {
         printf( "Could not load font. %s", SDL_GetError() );
@@ -123,6 +129,12 @@ SDL_AppResult SDL_AppInit(void **appstate, int argc, char **argv)
     *appstate = ctx;
     return SDL_APP_CONTINUE;
 }
+
+void playSound(GameState *appstate) {
+    GameState * ctx = (GameState *)appstate;
+    Mix_PlayChannel(-1, ctx->sound, 0);
+}
+
 
 void handleInput(GameState *ctx) {
     const bool* keystates = SDL_GetKeyboardState(NULL);
@@ -164,7 +176,7 @@ SDL_AppResult SDL_AppIterate(void *appstate){
 
     ////text
     SDL_Color color = { 100, 255, 100 };
-    SDL_Surface * textSurface = TTF_RenderText_Blended(ctx->font, "Sample Text", 0, color);
+    SDL_Surface * textSurface = TTF_RenderText_Blended(ctx->font, "Press S for sound", 0, color);
     SDL_Texture* textTexture = SDL_CreateTextureFromSurface( ctx->renderer, textSurface );
     SDL_FRect destRect = { 50, 50, textSurface->w, textSurface->h };
     SDL_RenderTexture(ctx->renderer, textTexture, NULL, &destRect);
@@ -188,7 +200,8 @@ SDL_AppResult SDL_AppEvent(void *appstate, SDL_Event *event){
 
     if (event->type == SDL_EVENT_KEY_DOWN) {
         switch(event->key.key) {
-            case SDLK_Q:  return SDL_APP_SUCCESS;
+            case SDLK_Q:  return SDL_APP_SUCCESS; break;
+            case SDLK_S:  playSound(ctx); break;
         }
     }
 
