@@ -27,7 +27,7 @@ typedef struct {
     TTF_Font * font;
     Mix_Chunk * sound;
     Mix_Music * music;
-} GameState;
+} GameContext;
 
 
 SDL_Texture * loadTexture(char * path, SDL_Renderer * renderer) {
@@ -64,9 +64,16 @@ SDL_AppResult SDL_AppInit(void **appstate, int argc, char **argv)
 {
     printf("SDL_AppInit\n");
 
-    GameState * ctx = malloc(sizeof(GameState));
-    ctx->x = 100;
-    ctx->y = 100;
+    //this method of initialization is preferred for a couple of reasons:
+    //1. I think having everything that's not a constant in GameContext may work better 
+    //on systems like Android that really control the behaviour of your app.
+    //2. It allows for more concise initialization of the GameContext. 
+    //This is paired with the member-wise copy at the end of this function.
+    GameContext * newAppState = (GameContext *)malloc(sizeof(GameContext));
+    GameContext ctx = {
+        .x = 100,
+        .y = 100
+    };
 
     int result = SDL_InitSubSystem(SDL_INIT_VIDEO | SDL_INIT_AUDIO | SDL_INIT_EVENTS);
     if(result < 0) {
@@ -81,8 +88,8 @@ SDL_AppResult SDL_AppInit(void **appstate, int argc, char **argv)
         SDL_LogError(SDL_LOG_CATEGORY_APPLICATION, "Couldn't create window and renderer: %s", SDL_GetError());
         return SDL_APP_FAILURE;
     }
-    ctx->window = window;
-    ctx->renderer = renderer;
+    ctx.window = window;
+    ctx.renderer = renderer;
 
     //initialize sound
     //bool Mix_OpenAudio(SDL_AudioDeviceID devid, const SDL_AudioSpec *spec);
@@ -93,22 +100,22 @@ SDL_AppResult SDL_AppInit(void **appstate, int argc, char **argv)
     }
 
     //load image
-    ctx->image = loadTexture("assets/image.png", renderer);
-    if (!ctx->image) {
+    ctx.image = loadTexture("assets/image.png", renderer);
+    if (!ctx.image) {
         printf( "Could not load image. %s", SDL_GetError() );
         return SDL_APP_FAILURE;
     }
 
     //load sound
-    ctx->sound = loadSound("assets/sound.wav");
-    if (!ctx->sound) {
+    ctx.sound = loadSound("assets/sound.wav");
+    if (!ctx.sound) {
         printf( "Could not load sound. %s", SDL_GetError() );
         return SDL_APP_FAILURE;
     }
 
     //load music
-    ctx->music = Mix_LoadMUS("assets/music.wav");
-    if (!ctx->music) {
+    ctx.music = Mix_LoadMUS("assets/music.wav");
+    if (!ctx.music) {
         printf( "Could not load music. %s", SDL_GetError() );
         return SDL_APP_FAILURE;
     }
@@ -120,23 +127,24 @@ SDL_AppResult SDL_AppInit(void **appstate, int argc, char **argv)
         return SDL_APP_FAILURE;
     }
 
-    ctx->font = TTF_OpenFont("assets/font.ttf", 48);
-    if (!ctx->font) {
+    ctx.font = TTF_OpenFont("assets/font.ttf", 48);
+    if (!ctx.font) {
       printf( "Font could not be loaded! SDL Error: %s\n", SDL_GetError() );
       return SDL_APP_FAILURE;
     }
 
-    *appstate = ctx;
+    *newAppState = ctx;
+    *appstate = newAppState;
     return SDL_APP_CONTINUE;
 }
 
-void playSound(GameState *appstate) {
-    GameState * ctx = (GameState *)appstate;
+void playSound(GameContext *appstate) {
+    GameContext * ctx = (GameContext *)appstate;
     Mix_PlayChannel(-1, ctx->sound, 0);
 }
 
 
-void handleInput(GameState *ctx) {
+void handleInput(GameContext *ctx) {
     const bool* keystates = SDL_GetKeyboardState(NULL);
 
     if (keystates[SDL_SCANCODE_UP]) {
@@ -154,7 +162,7 @@ void handleInput(GameState *ctx) {
 }
 
 SDL_AppResult SDL_AppIterate(void *appstate){
-    GameState * ctx = (GameState *)appstate;
+    GameContext * ctx = (GameContext *)appstate;
     if (!ctx) { return SDL_APP_FAILURE; }
 
     ctx->lastTime = SDL_GetTicks();
@@ -195,7 +203,7 @@ SDL_AppResult SDL_AppIterate(void *appstate){
 }
 
 SDL_AppResult SDL_AppEvent(void *appstate, SDL_Event *event){
-    GameState * ctx = (GameState *)appstate;
+    GameContext * ctx = (GameContext *)appstate;
     if (!ctx) { return SDL_APP_FAILURE; }
 
     if (event->type == SDL_EVENT_KEY_DOWN) {
@@ -209,7 +217,7 @@ SDL_AppResult SDL_AppEvent(void *appstate, SDL_Event *event){
 }
 
 void SDL_AppQuit(void *appstate, SDL_AppResult result) {
-    GameState * ctx = (GameState *)appstate;
+    GameContext * ctx = (GameContext *)appstate;
 
     if (ctx) { 
         TTF_CloseFont(ctx->font);
