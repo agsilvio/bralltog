@@ -33,37 +33,35 @@ typedef struct {
 SDL_Texture * loadTexture(char * path, SDL_Renderer * renderer) {
     SDL_Texture * newTexture = IMG_LoadTexture(renderer, path);
     if (!newTexture) {
-      printf( "Could not load image at '%s' could not be loaded! SDL Error: %s\n", path, SDL_GetError() );
-      return NULL;
+        SDL_LogError(SDL_LOG_CATEGORY_APPLICATION, "Could not load image at '%s' could not be loaded! SDL Error: %s", path, SDL_GetError());
+        return NULL;
     }
 
     return newTexture;
 }
 
 Mix_Chunk * loadSound(char * path) {
-  Mix_Chunk * sound = Mix_LoadWAV(path);
-  if (!sound) {
-      printf( "Could not load sound at '%s'. SDL Error: %s\n", path, SDL_GetError());
-      return NULL;
-  }
+    Mix_Chunk * sound = Mix_LoadWAV(path);
+    if (!sound) {
+        SDL_LogError(SDL_LOG_CATEGORY_APPLICATION, "Could not load sound at '%s'. SDL Error: %s", path, SDL_GetError());
+        return NULL;
+    }
 
-  return sound;
+    return sound;
 }
 
 void rateLimitFps(Uint32 lastTime) {
     Uint32 frameTime = 1000 / DESIRED_FPS;
     Uint32 delay = frameTime - (SDL_GetTicks() - lastTime);
     if (delay > 0) {
-      SDL_Delay(delay);
+        SDL_Delay(delay);
     }
-  }
+}
 
 
 
 SDL_AppResult SDL_AppInit(void **appstate, int argc, char **argv)
 {
-    printf("SDL_AppInit\n");
-
     //this method of initialization is preferred for a couple of reasons:
     //1. I think having everything that's not a constant in GameContext may work better 
     //on systems like Android that really control the behaviour of your app.
@@ -77,7 +75,7 @@ SDL_AppResult SDL_AppInit(void **appstate, int argc, char **argv)
 
     int result = SDL_InitSubSystem(SDL_INIT_VIDEO | SDL_INIT_AUDIO | SDL_INIT_EVENTS);
     if(result < 0) {
-        printf("SDL_InitSubSystem failed with code %d.", result);
+        SDL_LogError(SDL_LOG_CATEGORY_APPLICATION, "SDL_InitSubSystem failed with code %d. Error: %s", result, SDL_GetError());
         return SDL_APP_FAILURE;
     }
 
@@ -85,7 +83,7 @@ SDL_AppResult SDL_AppInit(void **appstate, int argc, char **argv)
     SDL_Window *window;
     SDL_Renderer *renderer;
     if (!SDL_CreateWindowAndRenderer("bralltog", VIEW_WIDTH, VIEW_HEIGHT, SDL_WINDOW_BORDERLESS, &window, &renderer)) {
-        SDL_LogError(SDL_LOG_CATEGORY_APPLICATION, "Couldn't create window and renderer: %s", SDL_GetError());
+        SDL_LogError(SDL_LOG_CATEGORY_APPLICATION, "Couldn't create window and renderer. Error: %s", SDL_GetError());
         return SDL_APP_FAILURE;
     }
     ctx.window = window;
@@ -95,42 +93,42 @@ SDL_AppResult SDL_AppInit(void **appstate, int argc, char **argv)
     //bool Mix_OpenAudio(SDL_AudioDeviceID devid, const SDL_AudioSpec *spec);
 
     if (!Mix_OpenAudio( 0, NULL)) {
-      printf( "SDL Mixer could not be initialized! SDL Error: %s\n", SDL_GetError() );
-      return SDL_APP_FAILURE;
+        SDL_LogError(SDL_LOG_CATEGORY_APPLICATION, "SDL Mixer could not be initialized! Error: %s", SDL_GetError());
+        return SDL_APP_FAILURE;
     }
 
     //load image
     ctx.image = loadTexture("assets/image.png", renderer);
     if (!ctx.image) {
-        printf( "Could not load image. %s", SDL_GetError() );
+        SDL_LogError(SDL_LOG_CATEGORY_APPLICATION, "Could not load image. Error: %s", SDL_GetError());
         return SDL_APP_FAILURE;
     }
 
     //load sound
     ctx.sound = loadSound("assets/sound.wav");
     if (!ctx.sound) {
-        printf( "Could not load sound. %s", SDL_GetError() );
+        SDL_LogError(SDL_LOG_CATEGORY_APPLICATION, "Could not load sound. Error: %s", SDL_GetError());
         return SDL_APP_FAILURE;
     }
 
     //load music
     ctx.music = Mix_LoadMUS("assets/music.wav");
     if (!ctx.music) {
-        printf( "Could not load music. %s", SDL_GetError() );
+        SDL_LogError(SDL_LOG_CATEGORY_APPLICATION, "Could not load music. Error: %s", SDL_GetError());
         return SDL_APP_FAILURE;
     }
 
     Mix_VolumeMusic(30);
 
     if (!TTF_Init()) {
-        printf( "Could not load font. %s", SDL_GetError() );
+        SDL_LogError(SDL_LOG_CATEGORY_APPLICATION, "Could not load font. Error: %s", SDL_GetError());
         return SDL_APP_FAILURE;
     }
 
     ctx.font = TTF_OpenFont("assets/font.ttf", 48);
     if (!ctx.font) {
-      printf( "Font could not be loaded! SDL Error: %s\n", SDL_GetError() );
-      return SDL_APP_FAILURE;
+        SDL_LogError(SDL_LOG_CATEGORY_APPLICATION, "Font could not be loaded! Error: %s\n", SDL_GetError());
+        return SDL_APP_FAILURE;
     }
 
     *newAppState = ctx;
@@ -148,16 +146,16 @@ void handleInput(GameContext *ctx) {
     const bool* keystates = SDL_GetKeyboardState(NULL);
 
     if (keystates[SDL_SCANCODE_UP]) {
-            ctx->y -= 2;
+        ctx->y -= 2;
     }
     if (keystates[SDL_SCANCODE_DOWN]) {
-            ctx->y += 2;
+        ctx->y += 2;
     }
     if (keystates[SDL_SCANCODE_LEFT]) {
-            ctx->x -= 2;
+        ctx->x -= 2;
     }
     if (keystates[SDL_SCANCODE_RIGHT]) {
-            ctx->x += 2;
+        ctx->x += 2;
     }
 }
 
