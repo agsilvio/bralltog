@@ -9,13 +9,15 @@ set(SDLTTF_FREETYPE_VENDORED ON)
 set(SDLTTF_VENDORED ON )
 set(SDLTTF_HARFBUZZ OFF)
 set(SDLTTF_PLUTOSVG OFF)
-#
+
+#Don't forget to install the dependencies required by SDL. Not building the world 
+# from scratch here.
 
 include(FetchContent)
 FetchContent_Declare(
 	remoteSdl3
 	GIT_REPOSITORY "https://github.com/libsdl-org/SDL.git"
-	GIT_TAG "release-3.2.8"
+	GIT_TAG "prerelease-3.3.4"
 	GIT_SHALLOW TRUE
 	GIT_PROGRESS TRUE
 	EXCLUDE_FROM_ALL
@@ -23,7 +25,7 @@ FetchContent_Declare(
 FetchContent_Declare(
 	remoteSdl3Ttf
 	GIT_REPOSITORY "https://github.com/libsdl-org/SDL_ttf.git"
-	GIT_TAG "release-3.2.0"
+	GIT_TAG "release-3.2.2"
 	GIT_SHALLOW TRUE
 	GIT_PROGRESS TRUE
 	EXCLUDE_FROM_ALL

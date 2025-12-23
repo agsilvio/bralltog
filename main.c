@@ -13,6 +13,7 @@
 #include "SDL3_mixer/SDL_mixer.h"
 #include <stdio.h>
 #include <stdlib.h>
+#include <stdbool.h>
 
 #define VIEW_WIDTH 900
 #define VIEW_HEIGHT 500
@@ -25,8 +26,10 @@ typedef struct {
     SDL_Renderer * renderer;
     SDL_Texture * image;
     TTF_Font * font;
-    Mix_Chunk * sound;
-    Mix_Music * music;
+    MIX_Mixer * mixer;
+    MIX_Track * sound;
+    MIX_Track * music;
+    bool musicMuted;
 } GameContext;
 
 
@@ -40,14 +43,17 @@ SDL_Texture * loadTexture(char * path, SDL_Renderer * renderer) {
     return newTexture;
 }
 
-Mix_Chunk * loadSound(char * path) {
-    Mix_Chunk * sound = Mix_LoadWAV(path);
+MIX_Track * loadSound(MIX_Mixer * mixer, char * path) {
+    MIX_Audio * sound = MIX_LoadAudio(mixer, path, true);
     if (!sound) {
         SDL_LogError(SDL_LOG_CATEGORY_APPLICATION, "Could not load sound at '%s'. SDL Error: %s", path, SDL_GetError());
         return NULL;
     }
 
-    return sound;
+    MIX_Track * track = MIX_CreateTrack(mixer);
+    MIX_SetTrackAudio(track, sound);
+
+    return track;
 }
 
 void rateLimitFps(Uint32 lastTime) {
@@ -70,7 +76,8 @@ SDL_AppResult SDL_AppInit(void **appstate, int argc, char **argv)
     GameContext * newAppState = (GameContext *)malloc(sizeof(GameContext));
     GameContext ctx = {
         .x = 100,
-        .y = 100
+        .y = 100,
+	.musicMuted = true
     };
 
     int result = SDL_InitSubSystem(SDL_INIT_VIDEO | SDL_INIT_AUDIO | SDL_INIT_EVENTS);
@@ -90,9 +97,9 @@ SDL_AppResult SDL_AppInit(void **appstate, int argc, char **argv)
     ctx.renderer = renderer;
 
     //initialize sound
-    //bool Mix_OpenAudio(SDL_AudioDeviceID devid, const SDL_AudioSpec *spec);
-
-    if (!Mix_OpenAudio( 0, NULL)) {
+    MIX_Init();
+    ctx.mixer = MIX_CreateMixerDevice(SDL_AUDIO_DEVICE_DEFAULT_PLAYBACK, NULL);
+    if (!ctx.mixer) {
         SDL_LogError(SDL_LOG_CATEGORY_APPLICATION, "SDL Mixer could not be initialized! Error: %s", SDL_GetError());
         return SDL_APP_FAILURE;
     }
@@ -105,20 +112,25 @@ SDL_AppResult SDL_AppInit(void **appstate, int argc, char **argv)
     }
 
     //load sound
-    ctx.sound = loadSound("assets/sound.wav");
+    ctx.sound = loadSound(ctx.mixer, "assets/sound.wav");
     if (!ctx.sound) {
         SDL_LogError(SDL_LOG_CATEGORY_APPLICATION, "Could not load sound. Error: %s", SDL_GetError());
         return SDL_APP_FAILURE;
     }
 
     //load music
-    ctx.music = Mix_LoadMUS("assets/music.wav");
+    ctx.music = loadSound(ctx.mixer, "assets/music.wav");
     if (!ctx.music) {
         SDL_LogError(SDL_LOG_CATEGORY_APPLICATION, "Could not load music. Error: %s", SDL_GetError());
         return SDL_APP_FAILURE;
     }
 
-    Mix_VolumeMusic(30);
+
+    MIX_SetTrackGain(ctx.sound, 1.0f);
+
+    //playMusic (muted on init)
+    MIX_SetTrackGain(ctx.music, 0.0f);
+    MIX_PlayTrack(ctx.music, 0);
 
     if (!TTF_Init()) {
         SDL_LogError(SDL_LOG_CATEGORY_APPLICATION, "Could not load font. Error: %s", SDL_GetError());
@@ -138,9 +150,19 @@ SDL_AppResult SDL_AppInit(void **appstate, int argc, char **argv)
 
 void playSound(GameContext *appstate) {
     GameContext * ctx = (GameContext *)appstate;
-    Mix_PlayChannel(-1, ctx->sound, 0);
+    MIX_PlayTrack(ctx->sound, 0);
 }
 
+void toggleMusic(GameContext *appstate) {
+    GameContext * ctx = (GameContext *)appstate;
+    if (ctx->musicMuted) {
+        MIX_SetTrackGain(ctx->music, 0.1f);
+	ctx->musicMuted = false;
+    } else {
+        MIX_SetTrackGain(ctx->music, 0.0f);
+	ctx->musicMuted = true;
+    }
+}
 
 void handleInput(GameContext *ctx) {
     const bool* keystates = SDL_GetKeyboardState(NULL);
@@ -208,6 +230,7 @@ SDL_AppResult SDL_AppEvent(void *appstate, SDL_Event *event){
         switch(event->key.key) {
             case SDLK_Q:  return SDL_APP_SUCCESS; break;
             case SDLK_S:  playSound(ctx); break;
+            case SDLK_M:  toggleMusic(ctx); break;
         }
     }
 
@@ -219,14 +242,14 @@ void SDL_AppQuit(void *appstate, SDL_AppResult result) {
 
     if (ctx) { 
         TTF_CloseFont(ctx->font);
-        Mix_FreeChunk(ctx->sound);
-        Mix_FreeMusic(ctx->music);
+        MIX_DestroyTrack(ctx->sound);
+        MIX_DestroyTrack(ctx->music);
         SDL_DestroyTexture(ctx->image);
         SDL_DestroyRenderer(ctx->renderer);
         SDL_DestroyWindow(ctx->window);
     }
 
     TTF_Quit();
-    Mix_Quit();
+    MIX_Quit();
     SDL_Quit();
 }
