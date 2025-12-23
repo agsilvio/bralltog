@@ -43,7 +43,7 @@ SDL_Texture * loadTexture(char * path, SDL_Renderer * renderer) {
     return newTexture;
 }
 
-MIX_Track * loadSound(MIX_Mixer * mixer, char * path) {
+MIX_Track * loadTrack(MIX_Mixer * mixer, char * path) {
     MIX_Audio * sound = MIX_LoadAudio(mixer, path, true);
     if (!sound) {
         SDL_LogError(SDL_LOG_CATEGORY_APPLICATION, "Could not load sound at '%s'. SDL Error: %s", path, SDL_GetError());
@@ -52,6 +52,7 @@ MIX_Track * loadSound(MIX_Mixer * mixer, char * path) {
 
     MIX_Track * track = MIX_CreateTrack(mixer);
     MIX_SetTrackAudio(track, sound);
+    MIX_DestroyAudio(sound);
 
     return track;
 }
@@ -112,14 +113,14 @@ SDL_AppResult SDL_AppInit(void **appstate, int argc, char **argv)
     }
 
     //load sound
-    ctx.sound = loadSound(ctx.mixer, "assets/sound.wav");
+    ctx.sound = loadTrack(ctx.mixer, "assets/sound.wav");
     if (!ctx.sound) {
         SDL_LogError(SDL_LOG_CATEGORY_APPLICATION, "Could not load sound. Error: %s", SDL_GetError());
         return SDL_APP_FAILURE;
     }
 
     //load music
-    ctx.music = loadSound(ctx.mixer, "assets/music.wav");
+    ctx.music = loadTrack(ctx.mixer, "assets/music.wav");
     if (!ctx.music) {
         SDL_LogError(SDL_LOG_CATEGORY_APPLICATION, "Could not load music. Error: %s", SDL_GetError());
         return SDL_APP_FAILURE;
