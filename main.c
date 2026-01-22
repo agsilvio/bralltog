@@ -205,10 +205,20 @@ SDL_AppResult SDL_AppIterate(void *appstate){
 
     ////text
     SDL_Color color = { 100, 255, 100 };
-    SDL_Surface * textSurface = TTF_RenderText_Blended(ctx->font, "Press S for sound", 0, color);
-    SDL_Texture* textTexture = SDL_CreateTextureFromSurface( ctx->renderer, textSurface );
-    SDL_FRect destRect = { 50, 50, textSurface->w, textSurface->h };
-    SDL_RenderTexture(ctx->renderer, textTexture, NULL, &destRect);
+    SDL_Surface * textSurface1 = TTF_RenderText_Blended(ctx->font, "Press S to play a sound", 0, color);
+    SDL_Texture* textTexture1 = SDL_CreateTextureFromSurface( ctx->renderer, textSurface1 );
+    SDL_FRect destRect1 = { 50, 50, textSurface1->w, textSurface1->h };
+    SDL_RenderTexture(ctx->renderer, textTexture1, NULL, &destRect1);
+
+    SDL_Surface * textSurface2 = TTF_RenderText_Blended(ctx->font, "Press M to toggle music", 0, color);
+    SDL_Texture* textTexture2 = SDL_CreateTextureFromSurface( ctx->renderer, textSurface2 );
+    SDL_FRect destRect2 = { 50, 100, textSurface2->w, textSurface2->h };
+    SDL_RenderTexture(ctx->renderer, textTexture2, NULL, &destRect2);
+
+    SDL_Surface * textSurface3 = TTF_RenderText_Blended(ctx->font, "Press Q to quit", 0, color);
+    SDL_Texture* textTexture3 = SDL_CreateTextureFromSurface( ctx->renderer, textSurface3 );
+    SDL_FRect destRect3 = { 50, 150, textSurface3->w, textSurface3->h };
+    SDL_RenderTexture(ctx->renderer, textTexture3, NULL, &destRect3);
 
     //present
     SDL_RenderPresent(ctx->renderer);
@@ -217,8 +227,12 @@ SDL_AppResult SDL_AppIterate(void *appstate){
     //one could create these surfaces and textures in the Init event
     //if the text never changed. This example would work for 
     //changing text (though not done here).
-    SDL_DestroySurface(textSurface); 
-    SDL_DestroyTexture(textTexture);
+    SDL_DestroySurface(textSurface1); 
+    SDL_DestroyTexture(textTexture1);
+    SDL_DestroySurface(textSurface2); 
+    SDL_DestroyTexture(textTexture2);
+    SDL_DestroySurface(textSurface3); 
+    SDL_DestroyTexture(textTexture3);
 
     return SDL_APP_CONTINUE;
 }
