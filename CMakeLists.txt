@@ -43,7 +43,7 @@ FetchContent_Declare(
 FetchContent_Declare(
 	remoteSdl3Mixer
 	GIT_REPOSITORY "https://github.com/libsdl-org/SDL_Mixer.git"
-	GIT_TAG "main"
+	GIT_TAG "prerelease-3.1.2"
 	GIT_SHALLOW TRUE
 	GIT_PROGRESS TRUE
 	EXCLUDE_FROM_ALL
