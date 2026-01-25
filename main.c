@@ -81,11 +81,36 @@ SDL_AppResult SDL_AppInit(void **appstate, int argc, char **argv)
 	.musicMuted = true
     };
 
-    int result = SDL_InitSubSystem(SDL_INIT_VIDEO | SDL_INIT_AUDIO | SDL_INIT_EVENTS);
+    int result = SDL_InitSubSystem(SDL_INIT_VIDEO | SDL_INIT_AUDIO | SDL_INIT_EVENTS | SDL_INIT_GAMEPAD);
     if(result < 0) {
         SDL_LogError(SDL_LOG_CATEGORY_APPLICATION, "SDL_InitSubSystem failed with code %d. Error: %s", result, SDL_GetError());
         return SDL_APP_FAILURE;
     }
+
+    //gamepad input
+    int count = 0;
+    SDL_JoystickID *ids = SDL_GetGamepads(&count);
+    SDL_Gamepad* gamepad = NULL;
+
+    // Iterate over the list of gamepads
+    for(int i = 0; i < count; i++) {
+	    SDL_Gamepad* gamepd = SDL_OpenGamepad(ids[i]);
+	    if(gamepad == NULL) {
+		    gamepad = gamepd;
+	    }
+
+	    //std::cout << "Gamepad connected: " << SDL_GetGamepadName(gamepd) << "\n";
+
+	    // Close the other gamepads
+	    if(i > 0) {
+		    SDL_CloseGamepad(gamepd);
+	    }
+    }
+    if (!gamepad) {
+        SDL_LogError(SDL_LOG_CATEGORY_APPLICATION, "Failed to open gamepad. Error: %s", SDL_GetError());
+        return SDL_APP_FAILURE;
+    }
+
 
     //open window and renderer
     SDL_Window *window;
@@ -168,16 +193,18 @@ void toggleMusic(GameContext *appstate) {
 void handleInput(GameContext *ctx) {
     const bool* keystates = SDL_GetKeyboardState(NULL);
 
-    if (keystates[SDL_SCANCODE_UP]) {
+    SDL_Gamepad *pad = SDL_GetGamepadFromPlayerIndex(0);
+
+    if (keystates[SDL_SCANCODE_UP] || (pad && SDL_GetGamepadButton(pad, SDL_GAMEPAD_BUTTON_DPAD_UP))) {
         ctx->y -= 2;
     }
-    if (keystates[SDL_SCANCODE_DOWN]) {
+    if (keystates[SDL_SCANCODE_DOWN] || (pad && SDL_GetGamepadButton(pad, SDL_GAMEPAD_BUTTON_DPAD_DOWN))) {
         ctx->y += 2;
     }
-    if (keystates[SDL_SCANCODE_LEFT]) {
+    if (keystates[SDL_SCANCODE_LEFT] || (pad && SDL_GetGamepadButton(pad, SDL_GAMEPAD_BUTTON_DPAD_LEFT))) {
         ctx->x -= 2;
     }
-    if (keystates[SDL_SCANCODE_RIGHT]) {
+    if (keystates[SDL_SCANCODE_RIGHT] || (pad && SDL_GetGamepadButton(pad, SDL_GAMEPAD_BUTTON_DPAD_RIGHT))) {
         ctx->x += 2;
     }
 }
