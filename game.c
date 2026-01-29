@@ -61,7 +61,39 @@ void rateLimitFps(Uint32 lastTime) {
     }
 }
 
-SDL_AppResult Core_SDL_AppInit(void **appstate, int argc, char **argv)
+SDL_AppResult loadAllAssets(GameContext * ctx, SDL_Renderer * renderer) {
+    //load image
+    ctx->image = loadTexture("assets/image.png", renderer);
+    if (!ctx->image) {
+        SDL_LogError(SDL_LOG_CATEGORY_APPLICATION, "Could not load image. Error: %s", SDL_GetError());
+        return SDL_APP_FAILURE;
+    }
+
+    //load sound
+    ctx->sound = loadTrack(ctx->mixer, "assets/sound.wav");
+    if (!ctx->sound) {
+        SDL_LogError(SDL_LOG_CATEGORY_APPLICATION, "Could not load sound. Error: %s", SDL_GetError());
+        return SDL_APP_FAILURE;
+    }
+
+    //load music
+    ctx->music = loadTrack(ctx->mixer, "assets/music.wav");
+    if (!ctx->music) {
+        SDL_LogError(SDL_LOG_CATEGORY_APPLICATION, "Could not load music. Error: %s", SDL_GetError());
+        return SDL_APP_FAILURE;
+    }
+
+
+    ctx->font = TTF_OpenFont("assets/font.ttf", 48);
+    if (!ctx->font) {
+        SDL_LogError(SDL_LOG_CATEGORY_APPLICATION, "Font could not be loaded! Error: %s\n", SDL_GetError());
+        return SDL_APP_FAILURE;
+    }
+
+    return SDL_APP_CONTINUE;
+}
+
+SDL_AppResult Core_SDL_AppInit(void **appstate, int argc, char **argv, bool reloaded)
 {
     //this method of initialization is preferred for a couple of reasons:
     //1. I think having everything that's not a constant in GameContext may work better 
@@ -122,44 +154,19 @@ SDL_AppResult Core_SDL_AppInit(void **appstate, int argc, char **argv)
         return SDL_APP_FAILURE;
     }
 
-    //load image
-    ctx.image = loadTexture("assets/image.png", renderer);
-    if (!ctx.image) {
-        SDL_LogError(SDL_LOG_CATEGORY_APPLICATION, "Could not load image. Error: %s", SDL_GetError());
-        return SDL_APP_FAILURE;
-    }
-
-    //load sound
-    ctx.sound = loadTrack(ctx.mixer, "assets/sound.wav");
-    if (!ctx.sound) {
-        SDL_LogError(SDL_LOG_CATEGORY_APPLICATION, "Could not load sound. Error: %s", SDL_GetError());
-        return SDL_APP_FAILURE;
-    }
-
-    //load music
-    ctx.music = loadTrack(ctx.mixer, "assets/music.wav");
-    if (!ctx.music) {
-        SDL_LogError(SDL_LOG_CATEGORY_APPLICATION, "Could not load music. Error: %s", SDL_GetError());
-        return SDL_APP_FAILURE;
-    }
-
-
-    MIX_SetTrackGain(ctx.sound, 1.0f);
-
-    //playMusic (muted on init)
-    MIX_SetTrackGain(ctx.music, 0.0f);
-    MIX_PlayTrack(ctx.music, 0);
-
     if (!TTF_Init()) {
         SDL_LogError(SDL_LOG_CATEGORY_APPLICATION, "Could not load font. Error: %s", SDL_GetError());
         return SDL_APP_FAILURE;
     }
 
-    ctx.font = TTF_OpenFont("assets/font.ttf", 48);
-    if (!ctx.font) {
-        SDL_LogError(SDL_LOG_CATEGORY_APPLICATION, "Font could not be loaded! Error: %s\n", SDL_GetError());
-        return SDL_APP_FAILURE;
-    }
+
+    SDL_AppResult loadAssetsResult = loadAllAssets(&ctx, renderer);
+
+    //playMusic (muted on init)
+    MIX_SetTrackGain(ctx.sound, 1.0f);
+    MIX_SetTrackGain(ctx.music, 0.0f);
+    MIX_PlayTrack(ctx.music, 0);
+
 
     *newAppState = ctx;
     *appstate = newAppState;
@@ -201,7 +208,7 @@ void handleInput(GameContext *ctx) {
     }
 }
 
-SDL_AppResult Core_SDL_AppIterate(void *appstate){
+SDL_AppResult Core_SDL_AppIterate(void *appstate, bool reloaded) {
     GameContext * ctx = (GameContext *)appstate;
     if (!ctx) { return SDL_APP_FAILURE; }
 
@@ -223,7 +230,7 @@ SDL_AppResult Core_SDL_AppIterate(void *appstate){
     SDL_RenderTexture(ctx->renderer, ctx->image, NULL, &imageRect);
 
     ////text
-    SDL_Color color = { 100, 255, 100 };
+    SDL_Color color = { 200, 255, 100 };
     SDL_Surface * textSurface1 = TTF_RenderText_Blended(ctx->font, "Press S to play a sound", 0, color);
     SDL_Texture* textTexture1 = SDL_CreateTextureFromSurface( ctx->renderer, textSurface1 );
     SDL_FRect destRect1 = { 50, 50, textSurface1->w, textSurface1->h };
@@ -256,7 +263,7 @@ SDL_AppResult Core_SDL_AppIterate(void *appstate){
     return SDL_APP_CONTINUE;
 }
 
-SDL_AppResult Core_SDL_AppEvent(void *appstate, SDL_Event *event){
+SDL_AppResult Core_SDL_AppEvent(void *appstate, SDL_Event *event, bool reloaded) {
     GameContext * ctx = (GameContext *)appstate;
     if (!ctx) { return SDL_APP_FAILURE; }
 
@@ -271,7 +278,7 @@ SDL_AppResult Core_SDL_AppEvent(void *appstate, SDL_Event *event){
     return SDL_APP_CONTINUE;
 }
 
-void Core_SDL_AppQuit(void *appstate, SDL_AppResult result) {
+void Core_SDL_AppQuit(void *appstate, SDL_AppResult result, bool reloaded) {
     GameContext * ctx = (GameContext *)appstate;
 
     if (ctx) { 

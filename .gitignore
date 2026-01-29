@@ -1,4 +1,6 @@
-debug
+build-debug
+build-develop
+build-emscripten
 build
-emscripten
+debug
 .cache

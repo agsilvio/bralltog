@@ -89,7 +89,7 @@ if (EMSCRIPTEN)
 	# Use custom emscripten shell
 	target_link_options(${CMAKE_PROJECT_NAME}
 			PRIVATE
-			--shell-file ${CMAKE_SOURCE_DIR}/shell.html
+			--shell-file ${CMAKE_SOURCE_DIR}/emscripten/shell.html
 			--preload-file assets 
 	)
 endif ()
