@@ -53,16 +53,28 @@ FetchContent_MakeAvailable(remoteSdl3Ttf)
 FetchContent_MakeAvailable(remoteSdl3Image)
 FetchContent_MakeAvailable(remoteSdl3Mixer)
 
-include_directories(bralltog ${remoteSdl3_SOURCE_DIR}/include EXCLUDE_FROM_ALL)
-include_directories(bralltog ${remoteSdl3Ttf_SOURCE_DIR}/include EXCLUDE_FROM_ALL)
-include_directories(bralltog ${remoteSdl3Image_SOURCE_DIR}/include EXCLUDE_FROM_ALL)
-include_directories(bralltog ${remoteSdl3Mixer_SOURCE_DIR}/include EXCLUDE_FROM_ALL)
+add_library(game SHARED game.c)
+target_include_directories(game
+	PUBLIC
+		${CMAKE_CURRENT_SOURCE_DIR}
+		${remoteSdl3_SOURCE_DIR}/include
+		${remoteSdl3Ttf_SOURCE_DIR}/include
+		${remoteSdl3Image_SOURCE_DIR}/include
+		${remoteSdl3Mixer_SOURCE_DIR}/include)
 
-add_executable(bralltog main.c)
-target_link_libraries(bralltog PRIVATE SDL3::SDL3 m)
-target_link_libraries(bralltog PRIVATE SDL3_mixer::SDL3_mixer m)
-target_link_libraries(bralltog PRIVATE SDL3_ttf::SDL3_ttf m)
-target_link_libraries(bralltog PRIVATE SDL3_image::SDL3_image m)
+target_link_libraries(game PUBLIC SDL3::SDL3
+                                  SDL3_mixer::SDL3_mixer
+                                  SDL3_ttf::SDL3_ttf
+                                  SDL3_image::SDL3_image 
+                                  m)
+
+add_executable(bralltog bralltog.c)
+
+target_link_libraries(bralltog PUBLIC game)
+
+set_target_properties(bralltog PROPERTIES BUILD_RPATH "$ORIGIN")
+
+target_compile_definitions(bralltog PRIVATE SDL_MAIN_USE_CALLBACKS)
 
 if (EMSCRIPTEN)
 	#control memory

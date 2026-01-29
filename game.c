@@ -1,23 +1,16 @@
-#include "SDL3/SDL_error.h"
-#include "SDL3/SDL_timer.h"
-#define SDL_MAIN_USE_CALLBACKS
+#include "game.h"
 
 #include "SDL3_image/SDL_image.h"
-#include "SDL3/SDL_main.h"
-#include "SDL3/SDL_video.h"
-#include "SDL3/SDL_init.h"
-#include "SDL3/SDL_keycode.h"
+#include "SDL3/SDL_error.h"
+#include "SDL3/SDL_timer.h"
 #include "SDL3/SDL_render.h"
-#include "SDL3/SDL_log.h"
-#include "SDL3_ttf/SDL_ttf.h" 
 #include "SDL3_mixer/SDL_mixer.h"
-#include <stdio.h>
+#include "SDL3_ttf/SDL_ttf.h" 
+#include "SDL3/SDL_video.h"
+#include "SDL3/SDL_keycode.h"
+#include "SDL3/SDL_log.h"
 #include <stdlib.h>
 #include <stdbool.h>
-
-#define VIEW_WIDTH 900
-#define VIEW_HEIGHT 500
-#define DESIRED_FPS 60
 
 typedef struct {
     Uint32 lastTime;
@@ -32,6 +25,9 @@ typedef struct {
     bool musicMuted;
 } GameContext;
 
+#define VIEW_WIDTH 1920
+#define VIEW_HEIGHT 1080
+#define DESIRED_FPS 60
 
 SDL_Texture * loadTexture(char * path, SDL_Renderer * renderer) {
     SDL_Texture * newTexture = IMG_LoadTexture(renderer, path);
@@ -65,9 +61,7 @@ void rateLimitFps(Uint32 lastTime) {
     }
 }
 
-
-
-SDL_AppResult SDL_AppInit(void **appstate, int argc, char **argv)
+SDL_AppResult Core_SDL_AppInit(void **appstate, int argc, char **argv)
 {
     //this method of initialization is preferred for a couple of reasons:
     //1. I think having everything that's not a constant in GameContext may work better 
@@ -209,7 +203,7 @@ void handleInput(GameContext *ctx) {
     }
 }
 
-SDL_AppResult SDL_AppIterate(void *appstate){
+SDL_AppResult Core_SDL_AppIterate(void *appstate){
     GameContext * ctx = (GameContext *)appstate;
     if (!ctx) { return SDL_APP_FAILURE; }
 
@@ -264,7 +258,7 @@ SDL_AppResult SDL_AppIterate(void *appstate){
     return SDL_APP_CONTINUE;
 }
 
-SDL_AppResult SDL_AppEvent(void *appstate, SDL_Event *event){
+SDL_AppResult Core_SDL_AppEvent(void *appstate, SDL_Event *event){
     GameContext * ctx = (GameContext *)appstate;
     if (!ctx) { return SDL_APP_FAILURE; }
 
@@ -279,7 +273,7 @@ SDL_AppResult SDL_AppEvent(void *appstate, SDL_Event *event){
     return SDL_APP_CONTINUE;
 }
 
-void SDL_AppQuit(void *appstate, SDL_AppResult result) {
+void Core_SDL_AppQuit(void *appstate, SDL_AppResult result) {
     GameContext * ctx = (GameContext *)appstate;
 
     if (ctx) { 
