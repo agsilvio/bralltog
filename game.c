@@ -25,8 +25,8 @@ typedef struct {
     bool musicMuted;
 } GameContext;
 
-#define VIEW_WIDTH 1920
-#define VIEW_HEIGHT 1080
+#define VIEW_WIDTH 1000
+#define VIEW_HEIGHT 600
 #define DESIRED_FPS 60
 
 SDL_Texture * loadTexture(char * path, SDL_Renderer * renderer) {
@@ -92,8 +92,6 @@ SDL_AppResult Core_SDL_AppInit(void **appstate, int argc, char **argv)
 	    if(gamepad == NULL) {
 		    gamepad = gamepd;
 	    }
-
-	    //std::cout << "Gamepad connected: " << SDL_GetGamepadName(gamepd) << "\n";
 
 	    // Close the other gamepads
 	    if(i > 0) {
