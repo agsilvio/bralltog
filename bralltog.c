@@ -24,6 +24,7 @@ const char* const APP_ITERATE_FUNC_NAME = "Core_SDL_AppIterate";
 const char* const APP_EVENT_FUNC_NAME = "Core_SDL_AppEvent";
 const char* const APP_QUIT_FUNC_NAME = "Core_SDL_AppQuit";
 const char* const LIB_PATH = "./libgame.so";
+const char* const ASSETS_PATH = "./assets";
 void* handle = NULL;
 
 SDL_AppResult (*Core_SDL_AppInit_ptr)(void **, int, char **, bool);
@@ -64,7 +65,8 @@ int reload_all_symbols(void* h) {
 }
 
 ReloadResult reload_library_if_modified() {
-    static time_t last_mtime = 0;
+    static time_t last_lib_mtime = 0;
+    static time_t last_assets_mtime = 0;
     static Uint64 last_check_time = 0;
     static int load_counter = 0;
 
@@ -74,8 +76,24 @@ ReloadResult reload_library_if_modified() {
     }
     last_check_time = now;
 
-    time_t current_mtime = get_mtime(LIB_PATH);
-    if (current_mtime > last_mtime) {
+    time_t lib_mtime = get_mtime(LIB_PATH);
+    time_t assets_mtime = get_mtime(ASSETS_PATH);
+
+    bool lib_changed = lib_mtime > last_lib_mtime;
+    bool assets_changed = assets_mtime > last_assets_mtime;
+
+    if (!lib_changed && !assets_changed) {
+        return RELOAD_NONE;
+    }
+
+    // Update assets mtime if changed
+    if (assets_changed) {
+        fprintf(stdout, "Assets changed, triggering reload...\n");
+        last_assets_mtime = assets_mtime;
+    }
+
+    // Reload library if changed
+    if (lib_changed) {
         // Copy library to temp file to avoid dlopen caching
         char temp_path[256];
         snprintf(temp_path, sizeof(temp_path), "/tmp/libgame_%d.so", load_counter++);
@@ -102,11 +120,14 @@ ReloadResult reload_library_if_modified() {
             return handle ? RELOAD_NONE : RELOAD_FAILED;
         }
         fprintf(stdout, "Reloading library...\n");
-        last_mtime = current_mtime;
+        last_lib_mtime = lib_mtime;
         handle = new_handle;  // old handle intentionally leaked
-        return reload_all_symbols(handle) ? RELOAD_SUCCESS : RELOAD_FAILED;
+        if (!reload_all_symbols(handle)) {
+            return RELOAD_FAILED;
+        }
     }
-    return RELOAD_NONE;
+
+    return RELOAD_SUCCESS;
 }
 #endif
 

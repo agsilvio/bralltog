@@ -3,7 +3,16 @@ project(bralltog)
 
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
+# Copy assets at configure time (initial build)
 file(COPY assets DESTINATION ${CMAKE_BINARY_DIR})
+
+# Custom target to copy assets at build time (for hot reload)
+add_custom_target(copy_assets
+    COMMAND ${CMAKE_COMMAND} -E copy_directory
+        ${CMAKE_SOURCE_DIR}/assets
+        ${CMAKE_BINARY_DIR}/assets
+    COMMENT "Copying assets to build directory..."
+)
 
 set(SDLTTF_FREETYPE_VENDORED ON)
 set(SDLTTF_VENDORED ON )

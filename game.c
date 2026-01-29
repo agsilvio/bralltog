@@ -61,6 +61,25 @@ void rateLimitFps(Uint32 lastTime) {
     }
 }
 
+void freeAllAssets(GameContext * ctx) {
+    if (ctx->font) {
+        TTF_CloseFont(ctx->font);
+        ctx->font = NULL;
+    }
+    if (ctx->sound) {
+        MIX_DestroyTrack(ctx->sound);
+        ctx->sound = NULL;
+    }
+    if (ctx->music) {
+        MIX_DestroyTrack(ctx->music);
+        ctx->music = NULL;
+    }
+    if (ctx->image) {
+        SDL_DestroyTexture(ctx->image);
+        ctx->image = NULL;
+    }
+}
+
 SDL_AppResult loadAllAssets(GameContext * ctx, SDL_Renderer * renderer) {
     //load image
     ctx->image = loadTexture("assets/image.png", renderer);
@@ -91,6 +110,25 @@ SDL_AppResult loadAllAssets(GameContext * ctx, SDL_Renderer * renderer) {
     }
 
     return SDL_APP_CONTINUE;
+}
+
+// Handles asset reload, ensuring it only happens once per reload event
+SDL_AppResult reloadAssetsIfNeeded(GameContext *ctx, bool reloaded) {
+    static bool last_reload_handled = false;
+    
+    if (!reloaded) {
+        last_reload_handled = false;
+        return SDL_APP_CONTINUE;
+    }
+    
+    if (last_reload_handled) {
+        return SDL_APP_CONTINUE;
+    }
+    last_reload_handled = true;
+    
+    SDL_Log("Hot reload: reloading assets...");
+    freeAllAssets(ctx);
+    return loadAllAssets(ctx, ctx->renderer);
 }
 
 SDL_AppResult Core_SDL_AppInit(void **appstate, int argc, char **argv, bool reloaded)
@@ -212,6 +250,9 @@ SDL_AppResult Core_SDL_AppIterate(void *appstate, bool reloaded) {
     GameContext * ctx = (GameContext *)appstate;
     if (!ctx) { return SDL_APP_FAILURE; }
 
+    SDL_AppResult reloadResult = reloadAssetsIfNeeded(ctx, reloaded);
+    if (reloadResult != SDL_APP_CONTINUE) { return reloadResult; }
+
     ctx->lastTime = SDL_GetTicks();
     rateLimitFps(ctx->lastTime);
 
@@ -267,6 +308,9 @@ SDL_AppResult Core_SDL_AppEvent(void *appstate, SDL_Event *event, bool reloaded)
     GameContext * ctx = (GameContext *)appstate;
     if (!ctx) { return SDL_APP_FAILURE; }
 
+    SDL_AppResult reloadResult = reloadAssetsIfNeeded(ctx, reloaded);
+    if (reloadResult != SDL_APP_CONTINUE) { return reloadResult; }
+
     if (event->type == SDL_EVENT_KEY_DOWN) {
         switch(event->key.key) {
             case SDLK_Q:  return SDL_APP_SUCCESS; break;
@@ -282,10 +326,7 @@ void Core_SDL_AppQuit(void *appstate, SDL_AppResult result, bool reloaded) {
     GameContext * ctx = (GameContext *)appstate;
 
     if (ctx) { 
-        TTF_CloseFont(ctx->font);
-        MIX_DestroyTrack(ctx->sound);
-        MIX_DestroyTrack(ctx->music);
-        SDL_DestroyTexture(ctx->image);
+        freeAllAssets(ctx);
         SDL_DestroyRenderer(ctx->renderer);
         SDL_DestroyWindow(ctx->window);
     }
