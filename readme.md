@@ -59,8 +59,8 @@ The project supports hot reloading of both code and assets during development. T
 
 1. Build the project normally and run `./bralltog`
 2. In another terminal, navigate to the `build` folder
-3. Copy `useful-scripts/build-game-lib-automatically.sh` to the build folder
-4. Run the script: `./build-game-lib-automatically.sh`
+3. Copy `useful-scripts/recompile-targets-automatically.sh` to the build folder
+4. Run the script: `./recompile-targets-automatically.sh`
 
 The script requires `entr` (install via your package manager). It watches for changes to source files and assets, then automatically:
 - Runs `make game` when source files change
@@ -68,7 +68,7 @@ The script requires `entr` (install via your package manager). It watches for ch
 
 ### Adding New Assets
 
-To add new assets to the hot reload watch list, edit the `ASSET_FILES` array in `build-game-lib-automatically.sh`:
+To add new assets to the hot reload watch list, edit the `ASSET_FILES` array in `recompile-targets-automatically.sh`:
 
 ```bash
 ASSET_FILES=(
