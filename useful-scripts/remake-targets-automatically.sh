@@ -8,37 +8,24 @@ set -e
 SOURCE_DIR=".."
 BUILD_DIR="."
 
-# Source files to watch
-SOURCE_FILES=(
-    "game.c"
-    "game.h"
-)
-
-# Asset files to watch (relative to SOURCE_DIR/assets/)
-ASSET_FILES=(
-    "font.ttf"
-    "image.png"
-    "music.wav"
-    "sound.wav"
-)
+# Find all .c files in the source directory and all files in assets/
+SOURCE_FILES=$(find "$SOURCE_DIR" -maxdepth 1 -name "*.c" -type f)
+ASSET_FILES=$(find "$SOURCE_DIR/assets" -type f 2>/dev/null || true)
 
 echo "Watching game library sources and assets..."
-echo "Sources: ${SOURCE_FILES[*]}"
-echo "Assets:  ${ASSET_FILES[*]}"
+echo "Sources:"
+echo "$SOURCE_FILES" | sed 's/^/  /'
+echo "Assets:"
+echo "$ASSET_FILES" | sed 's/^/  /'
+echo ""
 echo "Press Ctrl+C to stop."
 echo ""
 
 # Build the list of files to watch
-WATCH_FILES=()
-for src in "${SOURCE_FILES[@]}"; do
-    WATCH_FILES+=("${SOURCE_DIR}/${src}")
-done
-for asset in "${ASSET_FILES[@]}"; do
-    WATCH_FILES+=("${SOURCE_DIR}/assets/${asset}")
-done
+WATCH_FILES=$(printf '%s\n' $SOURCE_FILES $ASSET_FILES)
 
 # Use entr to watch files. The /_ placeholder is replaced with the changed file path.
-printf '%s\n' "${WATCH_FILES[@]}" | entr -c sh -c '
+echo "$WATCH_FILES" | entr -c sh -c '
     CHANGED_FILE="$1"
     SOURCE_DIR=".."
     BUILD_DIR="."
