@@ -58,7 +58,7 @@ include_directories(bralltog ${remoteSdl3Ttf_SOURCE_DIR}/include EXCLUDE_FROM_AL
 include_directories(bralltog ${remoteSdl3Image_SOURCE_DIR}/include EXCLUDE_FROM_ALL)
 include_directories(bralltog ${remoteSdl3Mixer_SOURCE_DIR}/include EXCLUDE_FROM_ALL)
 
-add_executable(bralltog main.c)
+add_executable(bralltog game.c)
 target_link_libraries(bralltog PRIVATE SDL3::SDL3 m)
 target_link_libraries(bralltog PRIVATE SDL3_mixer::SDL3_mixer m)
 target_link_libraries(bralltog PRIVATE SDL3_ttf::SDL3_ttf m)

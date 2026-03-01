@@ -24,6 +24,7 @@ typedef struct {
     int x, y;
     SDL_Window * window;
     SDL_Renderer * renderer;
+    SDL_Gamepad * gamepad;
     SDL_Texture * image;
     TTF_Font * font;
     MIX_Mixer * mixer;
@@ -78,22 +79,28 @@ SDL_AppResult SDL_AppInit(void **appstate, int argc, char **argv)
     GameContext ctx = {
         .x = 100,
         .y = 100,
+        .gamepad = NULL,
 	.musicMuted = true
     };
 
-    int result = SDL_InitSubSystem(SDL_INIT_VIDEO | SDL_INIT_AUDIO | SDL_INIT_EVENTS | SDL_INIT_GAMEPAD);
+    int result = SDL_InitSubSystem(SDL_INIT_VIDEO | SDL_INIT_AUDIO | SDL_INIT_EVENTS);
     if(result < 0) {
         SDL_LogError(SDL_LOG_CATEGORY_APPLICATION, "SDL_InitSubSystem failed with code %d. Error: %s", result, SDL_GetError());
         return SDL_APP_FAILURE;
     }
 
-    //gamepad input
+    int gamepadInitResult = SDL_InitSubSystem(SDL_INIT_GAMEPAD);
+    if (gamepadInitResult < 0) {
+        SDL_Log("Gamepad subsystem unavailable. Continuing with keyboard input only. Error: %s", SDL_GetError());
+    }
+
+    //gamepad input (optional)
     int count = 0;
     SDL_JoystickID *ids = SDL_GetGamepads(&count);
     SDL_Gamepad* gamepad = NULL;
 
     // Iterate over the list of gamepads
-    for(int i = 0; i < count; i++) {
+    for (int i = 0; ids && i < count; i++) {
 	    SDL_Gamepad* gamepd = SDL_OpenGamepad(ids[i]);
 	    if(gamepad == NULL) {
 		    gamepad = gamepd;
@@ -106,10 +113,12 @@ SDL_AppResult SDL_AppInit(void **appstate, int argc, char **argv)
 		    SDL_CloseGamepad(gamepd);
 	    }
     }
+    SDL_free(ids);
+
     if (!gamepad) {
-        SDL_LogError(SDL_LOG_CATEGORY_APPLICATION, "Failed to open gamepad. Error: %s", SDL_GetError());
-        return SDL_APP_FAILURE;
+        SDL_Log("No gamepad detected. Continuing with keyboard input only.");
     }
+    ctx.gamepad = gamepad;
 
 
     //open window and renderer
@@ -192,8 +201,7 @@ void toggleMusic(GameContext *appstate) {
 
 void handleInput(GameContext *ctx) {
     const bool* keystates = SDL_GetKeyboardState(NULL);
-
-    SDL_Gamepad *pad = SDL_GetGamepadFromPlayerIndex(0);
+    SDL_Gamepad *pad = ctx->gamepad;
 
     if (keystates[SDL_SCANCODE_UP] || (pad && SDL_GetGamepadButton(pad, SDL_GAMEPAD_BUTTON_DPAD_UP))) {
         ctx->y -= 2;
@@ -283,6 +291,10 @@ void SDL_AppQuit(void *appstate, SDL_AppResult result) {
     GameContext * ctx = (GameContext *)appstate;
 
     if (ctx) { 
+        if (ctx->gamepad) {
+            SDL_CloseGamepad(ctx->gamepad);
+            ctx->gamepad = NULL;
+        }
         TTF_CloseFont(ctx->font);
         MIX_DestroyTrack(ctx->sound);
         MIX_DestroyTrack(ctx->music);
